@@ -114,13 +114,53 @@ Wine이 실제로 쓰는 이름은 **`d:`(콜론 포함)** 입니다. 컨테이�
 2. 바로가기가 보이면 그걸 탭 (동일)
 3. 첫 실행은 초기화 때문에 다소 걸릴 수 있음
 
+## 5.1 레지스트리 주입 (필수) — "레지스트리에 등록되어 있지 않습니다" 오류
+
+이 게임들은 **레지스트리 키 존재를 확인**합니다. Wine 프리픽스에 없으면 실행이 거부됩니다.
+
+| 프로그램 | 확인하는 키 (실측: exe/dll 문자열) |
+|---|---|
+| `FT3K.EXE` | `HKCU\Software\TGL\FO` |
+| `FT4.EXE` | `HKCU\Software\TGL\FO2` |
+| `_inmm.dll` | `HKCU\Software\irori\_inmm.dll` (+ `\Player`, INMM v2.38 확인) |
+
+게임 폴더의 `DOOGIE\*.reg` 를 **Wine 레지스트리(user.reg)로 변환해 주입**한다.
+
+```powershell
+$H = "/data/data/com.winlator/files/rootfs/home/xuser-1"
+# 0) 컨테이너 정지 (Wine이 레지스트리를 덮어쓰지 않도록)
+& $adb shell "am force-stop com.winlator"
+
+# 1) user.reg + .reg 파일 회수  (raw 리다이렉트는 cmd 로!)
+cmd /c "`"$adb`" exec-out run-as com.winlator cat $H/.wine/user.reg > user.reg"
+& $adb pull "/storage/emulated/0/Winlator/FT3(K)/DOOGIE/_inmm.reg" .
+& $adb pull "/storage/emulated/0/Winlator/FT3(K)/DOOGIE/FT3.reg" .
+& $adb pull "/storage/emulated/0/Winlator/FT4(K)/DOOGIE/_inmm.reg" .
+& $adb pull "/storage/emulated/0/Winlator/FT4(K)/DOOGIE/_FT4.reg" .
+
+# 2) 병합  (tools/reg2wine.py : Windows .reg → Wine user.reg 형식, 중복 섹션 제거)
+python tools/reg2wine.py user.reg user_new.reg FT3_inmm.reg FT3_FT3.reg FT4_inmm.reg FT4_FT4.reg
+
+# 3) 반영 (백업 후)
+& $adb shell "run-as com.winlator cp $H/.wine/user.reg $H/.wine/user.reg.bak"
+& $adb push user_new.reg /data/local/tmp/
+& $adb shell "run-as com.winlator cp /data/local/tmp/user_new.reg $H/.wine/user.reg"
+
+# 4) 확인
+& $adb shell "run-as com.winlator grep -c irori $H/.wine/user.reg"   # 5 이상
+```
+
+- 컨테이너를 **새로 만들면 프리픽스가 새로 생기므로**(`xuser-2` …) 그 컨테이너에도 같은 주입이 필요하다.
+- 다른 컨테이너에 적용할 때는 `$H` 의 `xuser-N` 만 바꾸면 된다.
+
 ## 6. 알려진 이슈 / 대응
 
 | 증상 | 대응 |
 |---|---|
+| **"레지스트리에 등록되어 있지 않습니다"** | 5.1 레지스트리 주입 (가장 흔함) |
 | 색상/팔레트 깨짐 | `FT3(K)\_Winlator\dgVoodoo2\` 의 3개 파일을 `FT3(K)\` 루트로 복사 |
 | 소리 없음 | 컨테이너 `startupSelection=0`(Normal) 확인, 재실행 |
-| BGM만 없음 | 정상적 실패 모드(무음 진행 가능). `DOOGIE\_inmm.reg` 등록 시도 |
+| BGM만 없음 | 정상적 실패 모드(무음 진행 가능) |
 | 커서 조작 | 터치 = 마우스, 더블클릭은 두 번 탭 |
 | 게임이 안 뜸 | Winlator 로그 확인, exe 경로(D:\FT3(K)\FT3K.EXE) 재확인 |
 
