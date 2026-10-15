@@ -97,10 +97,46 @@ wsl -d Ubuntu -u root -e bash -c "mkdir -p /mnt/rgb30 && mount -L STORAGE /mnt/r
 - 위 3절의 `windows/.winecellar`(wine+프리픽스)와 `ports/farlandtactics*` 를 그대로 복사하면 됩니다.
   (ROCKNIX 의 PortMaster 는 최신 버전이므로 런처의 `$directory` 경로만 자연스럽게 맞습니다.)
 
-### (B) weston(웨이랜드) 번들 시도 — 실험적
-- ROCKNIX 이미지에서 `weston` + 의존 라이브러리를 추출해 JELOS 에 넣고,
-  wine 11 의 **네이티브 Wayland 드라이버**(Xwayland 불필요)로 출력.
-- 성공 시 기존 카드 그대로 사용 가능하지만 **glibc/ABI mismatch 리스크**가 큽니다.
+### (B) weston 번들 — **구현 완료, 기기 검증 대기**
+ROCKNIX(2024~, glibc 최신) 대신 **Debian bookworm(arm64, glibc 2.36 기준 빌드)** 의 weston 을
+가져와 JELOS(glibc 2.38)에서 돌리는 방식입니다. (구버전이 신버전 위에서 동작 → 안전)
+
+```
+roms/windows/.winecellar/weston/         # 16MB (최소 구성)
+  bin/weston                             # weston 10.0.1
+  lib/                                   # libweston-10, libwayland-*, libxkbcommon, libinput, libseat ...
+  lib/weston/                            # drm-backend, gl-renderer, kiosk-shell, desktop-shell, libexec_weston
+  share/X11/xkb/                         # 키맵 데이터
+roms/w -> windows/.winecellar/weston/lib/weston   # 카드(=/roms) 안의 심볼릭 링크
+```
+
+**핵심 트릭 — 컴파일 시 고정된 모듈 경로 패치**
+weston 은 백엔드/셸/헬퍼를 `LIBWESTON_MODULEDIR=/usr/lib/aarch64-linux-gnu/libweston-10` 에서
+찾는데 JELOS 에는 그 경로가 없습니다(읽기전용). 그래서 바이너리 문자열을 **`/roms/w`** 로 패치했습니다.
+```
+lib/libweston-10.so.0*   : /usr/lib/aarch64-linux-gnu/libweston-10  -> /roms/w (NUL 패딩)
+bin/weston, lib/libexec_weston.so.0, lib/weston/libexec_weston.so :
+                           /usr/lib/aarch64-linux-gnu              -> /roms/w
+lib/weston/weston-desktop-shell, weston-keyboard (심볼릭 링크 -> libexec_weston.so)
+```
+
+- 셸은 **kiosk-shell** 사용: 헬퍼 프로세스가 필요 없고 창을 화면에 꽉 채웁니다.
+  (desktop-shell 헬퍼는 컨테이너 검증에서 SIGILL — QEMU 아티팩트로 추정되나 회피)
+- 화면이 720x720 정사각이므로 **wine 가상 데스크톱 720x720** 으로 띄워 4:3 게임을 레터박스 처리
+  (`explorer /desktop=farland,720x720`, `FARLAND_VDESK` 로 변경 가능)
+- wine 출력은 **네이티브 Wayland 드라이버**: 프리픽스에
+  `HKCU\Software\Wine\Drivers\Graphics="wayland"` 주입 (`portmaster/regs/wine_gfx_wayland.reg`)
+- GL 렌더러 실패 시 자동으로 `--use-pixman` 재시도 (런처에 구현)
+
+**검증 상태**
+
+| 항목 | 결과 |
+|---|---|
+| 번들 무결성 (arm64 컨테이너) | ✅ `weston --version`, headless+kiosk-shell 기동, 소켓 생성 |
+| 모듈 경로 패치 | ✅ `/roms/w/kiosk-shell.so` 로드 확인 |
+| **기기(DRM + libmali EGL/GBM)** | ⏳ 미검증 (카드를 기기에 넣고 실행 필요) |
+
+로그: `roms/ports/farlandtactics3/log.txt`, `.../weston.log`
 
 ### (C) 보류
 - 안드로이드(Winlator) 쪽은 이미 동작하므로 리눅스는 나중에.
