@@ -1,14 +1,16 @@
 #!/bin/bash
-# =============================================================================
-#  Farland Tactics 4 (파랜드 택틱스 4 / 파랜드 오딧세이 2) — PortMaster Wine 런처
-#  PORTMASTER: farlandtactics4.zip
-#  실행 방식: box86 + wine(win32)  또는  Wine Hangover(box64)
-#  자세한 배경: FarlandPort/docs/02-portmaster-wine.md
-# =============================================================================
-
+# ─────────────────────────────────────────────────────────────────────────────
+#  파랜드 택틱스 4 (Farland Odyssey 2 / 파랜드 택틱스 4) — Windows / DirectDraw
+#  실행 방식: box64 + wine(amd64 wow64)
+#
+#  필요 조건
+#    · aarch64 CFW (ROCKNIX 계열 권장) + box64
+#    · X11/Wayland 디스플레이 서버  ← JELOS 20231003 에는 없음(실행 불가)
+#    · wine : roms/windows/.winecellar/wine-11.19-amd64-wow64
+#    · 프리픽스 : roms/windows/.winecellar/prefix-farland
+# ─────────────────────────────────────────────────────────────────────────────
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 
-# --- PortMaster preamble -----------------------------------------------------
 if [ -d "/opt/system/Tools/PortMaster/" ]; then
   controlfolder="/opt/system/Tools/PortMaster"
 elif [ -d "/opt/tools/PortMaster/" ]; then
@@ -16,95 +18,58 @@ elif [ -d "/opt/tools/PortMaster/" ]; then
 elif [ -d "/roms/ports/PortMaster" ]; then
   controlfolder="/roms/ports/PortMaster"
 else
-  controlfolder="/roms/tools/PortMaster"
+  controlfolder="/storage/roms/ports/PortMaster"
 fi
 
-source "$controlfolder/control.txt"
-[ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
+source $controlfolder/control.txt
 get_controls
 
-# --- paths -------------------------------------------------------------------
 GAMEDIR="/$directory/ports/farlandtactics4"
-EXEC="FT4.EXE"
-cd "$GAMEDIR" || { echo "GAMEDIR 없음: $GAMEDIR"; exit 1; }
-mkdir -p "$GAMEDIR/logs"
-LOG="$GAMEDIR/logs/log.txt"
-> "$LOG" && exec > >(tee "$LOG") 2>&1
+[ -d "$GAMEDIR" ] || GAMEDIR="$(cd "$(dirname "$0")" && pwd)/farlandtactics4"
+DATADIR="$GAMEDIR/data"
 
-echo "[FarlandPort] 시작 $(date)"
-echo "[FarlandPort] GAMEDIR=$GAMEDIR"
-
-# --- 게임 데이터 확인 -----------------------------------------------------------
-if [ ! -f "$GAMEDIR/data/$EXEC" ]; then
-  echo "[FarlandPort] 게임 데이터 없음: data/$EXEC"
-  pm_message "farlandtactics4/data/ 안에 보유한 게임 파일을 복사하세요."
-  sleep 8
-  exit 1
-fi
-
-# --- exports -----------------------------------------------------------------
-export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
-export WINEDEBUG=-all
-export WINEDLLOVERRIDES="ddraw,dinput,dsound=n,b"
-
-# --- 러너 선택: 32비트 서브시스템 유무로 결정 --------------------------------------
-HAVE32=0
-if [ -d /usr/lib32 ] || [ -d /lib32 ] || [ -d /usr/lib/i386-linux-gnu ]; then HAVE32=1; fi
-
-if command -v box86 >/dev/null 2>&1 && [ "$HAVE32" = "1" ]; then
-  BOX="box86"
-  export WINEARCH=win32
-  export WINEPREFIX="$HOME/.wine32"
-  echo "[FarlandPort] 러너: box86 + wine(win32)  [32비트 경로]"
-else
-  BOX="box64"
-  export WINEPREFIX="$HOME/.wine"
-  echo "[FarlandPort] 러너: box64 + Wine Hangover  [32비트 미지원 기기 → 느릴 수 있음]"
-fi
-
-if ! command -v wine >/dev/null 2>&1; then
-  echo "[FarlandPort] wine 실행 파일을 찾을 수 없습니다."
-  pm_message "Wine 러너가 필요합니다. (docs/02-portmaster-wine.md 참고)"
-  sleep 8
-  exit 1
-fi
-
-# --- wine prefix 초기화(첫 실행: 수 분 소요 가능) -----------------------------------
-if [ ! -d "$WINEPREFIX" ]; then
-  echo "[FarlandPort] wine prefix 생성: $WINEPREFIX"
-  $BOX wine wineboot -u || true
-fi
-
-# --- DirectDraw → OpenGL (1회) --------------------------------------------------
-if [ ! -f "$WINEPREFIX/.farland_ddr_done" ]; then
-  if command -v winetricks >/dev/null 2>&1; then
-    echo "[FarlandPort] winetricks ddr=opengl 적용"
-    winetricks -q ddr=opengl || true
-  else
-    echo "[FarlandPort] winetricks 없음 → ddr 설정 생략(색상 문제 시 수동 적용)"
+for c in "/$directory/windows/.winecellar" "/roms/windows/.winecellar" "/storage/roms/windows/.winecellar"; do
+  if [ -x "$c/wine-11.19-amd64-wow64/bin/wine" ]; then
+    WINECELLAR="$c"
+    break
   fi
-  touch "$WINEPREFIX/.farland_ddr_done"
+done
+WINE="$WINECELLAR/wine-11.19-amd64-wow64"
+
+if [ ! -x "$WINE/bin/wine" ]; then
+  echo "wine 을 찾을 수 없습니다 (roms/windows/.winecellar)" > /dev/tty0
+  sleep 6
+  exit 1
 fi
 
-# --- _inmm(BGM) 레지스트리 (실패해도 진행) ------------------------------------------
-if [ -f "$GAMEDIR/data/DOOGIE/_inmm.reg" ] && [ ! -f "$WINEPREFIX/.farland_inmm_done" ]; then
-  echo "[FarlandPort] _inmm 레지스트리 등록 시도"
-  ( cd "$GAMEDIR/data" && $BOX wine regedit /S "DOOGIE\\_inmm.reg" ) || true
-  touch "$WINEPREFIX/.farland_inmm_done"
-fi
+export WINEPREFIX="$WINECELLAR/prefix-farland"
+export WINEARCH=win64
+export WINEDEBUG=-all
+export WINEDLLOVERRIDES="mscoree,mshtml=d;ddraw=n,b"
+export WINEDLLPATH="$WINE/lib/wine"
 
-# --- 컨트롤 매핑 ---------------------------------------------------------------
-$GPTOKEYB "$EXEC" -c "$GAMEDIR/farlandtactics4.gptk" &
+export BOX64_NOBANNER=1
+export BOX64_LOG=0
+export BOX64_DYNAREC_BIGBLOCK=2
+export BOX64_DYNAREC_STRONGMEM=1
+export BOX64_DYNAREC_FASTNAN=1
+export BOX64_DYNAREC_FASTROUND=1
+export BOX64_DYNAREC_SAFEFLAGS=1
+export BOX64_DYNAREC_X87DOUBLE=1
+export BOX64_DYNAREC_ALIGNED_ATOMICS=1
 
-# --- 실행 (작업 디렉터리 = data : bgm\ _inmm 상대경로 때문) ---------------------------
-echo "[FarlandPort] 실행: $BOX wine $EXEC"
-( cd "$GAMEDIR/data" && $BOX wine "$EXEC" 2>&1 )
+cd "$DATADIR"
 
-# --- 정리 ---------------------------------------------------------------------
+$ESUDO chmod 666 /dev/uinput 2>/dev/null
+$GPTOKEYB "FT4.EXE" -c "$GAMEDIR/farlandtactics4.gptk" &
+GPTOKEYB_PID=$!
+
+printf "\033c" > /dev/tty0
+echo "파랜드 택틱스 4 실행 중... (첫 실행은 느립니다)" > /dev/tty0
+
+box64 "$WINE/bin/wine" "FT4.EXE" 2>&1 | tee "$GAMEDIR/log.txt"
+
+kill -9 $GPTOKEYB_PID 2>/dev/null
 $ESUDO kill -9 $(pidof gptokeyb) 2>/dev/null
-unset LD_LIBRARY_PATH
-unset SDL_GAMECONTROLLERCONFIG
-[ -n "$ESUDO" ] && $ESUDO systemctl restart oga_events >/dev/null 2>&1 &
-
-echo "[FarlandPort] 종료 $(date)"
-exit 0
+$ESUDO systemctl restart oga_events 2>/dev/null &
+printf "\033c" > /dev/tty0

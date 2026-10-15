@@ -53,3 +53,5 @@ __pycache__/
 Thumbs.db
 desktop.ini
 *.bak
+
+runtimes/

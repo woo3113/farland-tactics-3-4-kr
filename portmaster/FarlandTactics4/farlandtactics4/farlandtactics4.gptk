@@ -1,42 +1,22 @@
-# =============================================================================
-#  Farland Tactics 4  -  gptokeyb control mapping
-#  마우스 중심 게임: 좌측 아날로그 = 마우스 이동, A = 좌클릭, B = 우클릭
-#  튜닝: 값이 클수록 마우스가 "느려"집니다 (mouse_scale)
-#  종료: Start + Select
-# =============================================================================
-
-# --- 마우스 이동 (좌측 아날로그) ---
-left_analog_up = mouse_movement_up
-left_analog_down = mouse_movement_down
-left_analog_left = mouse_movement_left
-left_analog_right = mouse_movement_right
-
-# --- 마우스 버튼 / 확인 / 취소 ---
+# 파랜드 택틱스 3 — RGB30(스틱 있음) gptokeyb 매핑
+# 마우스 중심 게임: 왼쪽 스틱 = 커서, A/L1 = 좌클릭, B/R1 = 우클릭
+# gptokeyb: left_analog_up 에 mouse_movement_up 을 주면 스틱→마우스 모드가 켜진다
+back = esc
+start = enter
 a = mouse_left
 b = mouse_right
 x = enter
 y = esc
-
-# --- 보조 ---
 l1 = mouse_left
+r1 = mouse_right
 l2 = f12
-r1 = mouse_slow
 r2 = space
+l3 = mouse_left
+r3 = mouse_right
 
-# --- 방향키 (맵 스크롤 / 커서 미세 이동) ---
-up = up
-down = down
-left = left
-right = right
+left_analog_up = mouse_movement_up
+mouse_scale = 200
+mouse_delay = 10
 
-# --- 시작/뒤로 ---
-start = enter
-back = esc
+hotkey = back
 
-# --- 마우스 감도/데드존 (기기별로 조정) ---
-mouse_scale = 6000
-mouse_delay = 16
-deadzone_mode = scaled_radial
-deadzone = 2000
-deadzone_scale = 8
-deadzone_delay = 16
