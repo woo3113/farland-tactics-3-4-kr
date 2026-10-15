@@ -1,0 +1,55 @@
+# =============================================================================
+#  FarlandPort .gitignore
+#  원칙: 게임 데이터/바이너리/빌드 산출물은 절대 커밋하지 않는다.
+#        (스크립트·문서·설정만 저장)
+# =============================================================================
+
+# --- 빌드 산출물 / 패키지 ---
+dist/
+*.zip
+*.7z
+
+# --- 게임 데이터(스테이징 폴더) ---
+portmaster/*/*/data/*
+!portmaster/*/*/data/PUT-GAME-DATA-HERE.txt
+!portmaster/*/*/data/.keep
+Games/
+/data/
+
+# --- 게임 리소스 확장자 (실수 방지) ---
+*.PAC
+*.pac
+*.FOS
+*.fos
+*.EXE
+*.exe
+*.dll
+*.mp3
+*.wav
+*.WAV
+*.bmp
+*.BMP
+*.dat
+*.DAT
+*.SCR
+*.scr
+*.CFG
+*.cfg
+*.MSA
+*.msa
+*.MAP
+*.GRP
+
+# --- 로그 / 캐시 ---
+logs/
+*.log
+_inmm.log
+__pycache__/
+*.pyc
+
+# --- 에디터 / OS ---
+.vs/
+.vscode/
+Thumbs.db
+desktop.ini
+*.bak

@@ -1,0 +1,21 @@
+여기에 보유한 "파랜드 택틱스 3(파랜드 오딧세이)" 한국어판 파일을 복사하세요.
+
+필요한 것 (한국어판 전체):
+  FT3K.EXE          <- 게임 본체 (한국어판)
+  GRPDATA.PAC       <- 그래픽
+  MAPDATA.PAC       <- 맵
+  GEMT.CFG
+  BGM\              <- BGM (WAV)
+  CVK\              <- 한국어 음성
+  WVK\              <- 한국어 효과음/음성
+  DAT\              <- 캐릭터/클래스 데이터
+  SCR\              <- 이벤트 스크립트
+  data_ud\          <- 맵/캐릭터 데이터
+  DOOGIE\           <- _inmmserv.exe, *.reg
+  _inmm.dll  _inmm.ini
+  _FT3_Kor_Voice.exe
+  ODDATA00.FOS ~ ODDATA08.FOS
+
+용량 절약(선택): 일본어 음성 CVJ\, WVJ\ 와 FT3J.EXE 는 지워도 됩니다 (약 390MB 절감).
+
+주의: 이 게임은 마우스 조작입니다. 실행 후 좌측 아날로그로 커서를 움직이세요.

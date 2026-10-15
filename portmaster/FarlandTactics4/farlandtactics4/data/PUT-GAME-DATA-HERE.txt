@@ -1,0 +1,18 @@
+여기에 보유한 "파랜드 택틱스 4(파랜드 오딧세이 2)" 게임 파일을 복사하세요.
+
+필요한 것 (게임 폴더 전체):
+  FT4.EXE           <- 게임 본체
+  mapdata.pac       <- 맵 (약 180MB)
+  grpdata.pac       <- 그래픽
+  visual0.pac       <- 비주얼
+  voice0.pac        <- 음성 (약 114MB)
+  bgm\              <- BGM (mp3 21곡)
+  wav\              <- 효과음/보이스
+  scr\              <- 이벤트 스크립트
+  dat\              <- 폰트/데이터
+  DOOGIE\           <- _inmmserv.exe, *.reg
+  ITEM.CFG  STAT.CFG  ITEMEDIT.EXE  STATEDIT.EXE
+  _inmm.dll  _inmm.ini  _FT4.exe
+  fo2sv_00.fos ~ fo2sv_09.fos
+
+주의: 이 게임은 마우스 조작입니다. 실행 후 좌측 아날로그로 커서를 움직이세요.

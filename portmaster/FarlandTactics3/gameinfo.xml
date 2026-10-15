@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./Farland Tactics 3.sh</path>
+		<name>파랜드 택틱스 3</name>
+		<desc>파랜드 오딧세이(1999, TGL) — Wine으로 실행하는 전술 RPG. 한국어판.</desc>
+		<image>./farlandtactics3/screenshot.jpg</image>
+		<thumbnail>./farlandtactics3/screenshot.jpg</thumbnail>
+		<developer>TGL / Family Production</developer>
+		<publisher>TGL</publisher>
+		<genre>전략 / RPG</genre>
+		<players>1</players>
+		<releasedate>19990709T000000</releasedate>
+	</game>
+</gameList>

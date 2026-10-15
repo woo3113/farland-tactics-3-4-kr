@@ -1,0 +1,42 @@
+# =============================================================================
+#  Farland Tactics 3  -  gptokeyb control mapping
+#  마우스 중심 게임: 좌측 아날로그 = 마우스 이동, A = 좌클릭, B = 우클릭
+#  튜닝: 값이 클수록 마우스가 "느려"집니다 (mouse_scale)
+#  종료: Start + Select
+# =============================================================================
+
+# --- 마우스 이동 (좌측 아날로그) ---
+left_analog_up = mouse_movement_up
+left_analog_down = mouse_movement_down
+left_analog_left = mouse_movement_left
+left_analog_right = mouse_movement_right
+
+# --- 마우스 버튼 / 확인 / 취소 ---
+a = mouse_left
+b = mouse_right
+x = enter
+y = esc
+
+# --- 보조 ---
+l1 = mouse_left
+l2 = f12
+r1 = mouse_slow
+r2 = space
+
+# --- 방향키 (맵 스크롤 / 커서 미세 이동) ---
+up = up
+down = down
+left = left
+right = right
+
+# --- 시작/뒤로 ---
+start = enter
+back = esc
+
+# --- 마우스 감도/데드존 (기기별로 조정) ---
+mouse_scale = 6000
+mouse_delay = 16
+deadzone_mode = scaled_radial
+deadzone = 2000
+deadzone_scale = 8
+deadzone_delay = 16

@@ -1,0 +1,15 @@
+# 줄바꿈 정책: 휴대기기용 스크립트는 반드시 LF (CRLF면 실행 실패)
+* text=auto
+
+*.sh     text eol=lf
+*.gptk   text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.xml    text eol=lf
+*.py     text eol=lf
+*.ps1    text eol=crlf
+
+*.zip    binary
+*.7z     binary
+*.png    binary
+*.jpg    binary

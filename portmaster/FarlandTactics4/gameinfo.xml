@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<gameList>
+	<game>
+		<path>./Farland Tactics 4.sh</path>
+		<name>파랜드 택틱스 4</name>
+		<desc>파랜드 오딧세이 2 ~그대에게 보내는 세레나데~ (2000, TGL) — Wine으로 실행하는 전술 RPG.</desc>
+		<image>./farlandtactics4/screenshot.jpg</image>
+		<thumbnail>./farlandtactics4/screenshot.jpg</thumbnail>
+		<developer>TGL / Family Production</developer>
+		<publisher>TGL</publisher>
+		<genre>전략 / RPG</genre>
+		<players>1</players>
+		<releasedate>20001116T000000</releasedate>
+	</game>
+</gameList>

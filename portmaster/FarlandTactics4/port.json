@@ -1,0 +1,36 @@
+{
+  "version": 4,
+  "name": "farlandtactics4.zip",
+  "items": [
+    "Farland Tactics 4.sh",
+    "farlandtactics4"
+  ],
+  "items_opt": [],
+  "attr": {
+    "title": "파랜드 택틱스 4",
+    "porter": [
+      "FarlandPort"
+    ],
+    "desc": "파랜드 오딧세이 2 ~그대에게 보내는 세레나데~ (2000, TGL) — Wine으로 실행하는 전술 RPG.",
+    "desc_md": null,
+    "inst": "보유한 게임 파일 전체를 farlandtactics4/data/ 에 복사하세요. (FT4.EXE, mapdata.pac, grpdata.pac, visual0.pac, voice0.pac, bgm/, wav/, scr/, dat/, ITEM.CFG, STAT.CFG, _inmm.*, DOOGIE/) 그 후 포트를 실행하면 첫 실행 시 Wine 프리픽스가 생성됩니다(수 분 소요).",
+    "inst_md": null,
+    "genres": [
+      "strategy",
+      "rpg"
+    ],
+    "image": {},
+    "rtr": false,
+    "exp": true,
+    "runtime": [],
+    "store": [],
+    "availability": "paid",
+    "reqs": [
+      "wine (box86 또는 Hangover)"
+    ],
+    "arch": [
+      "aarch64"
+    ],
+    "min_glibc": ""
+  }
+}
