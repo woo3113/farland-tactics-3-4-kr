@@ -265,7 +265,9 @@
 
   /* ── 캐릭터 스탯 (원작 DOS 에디터로 확정한 오프셋) ── */
   const PARTY   = 8;
-  const STATS = [ ["HP", 0x0014], ["HP-MAX", 0x0024], ["SP", 0x0034], ["SP-MAX", 0x0044] ];
+  const NAMES   = ["아크","아미","카인","쉬엔카","에린","레오","시엘라","디언"];   // DAT\CHAR.DAT
+  const STATS = [ ["HP", 0x0014, 2, 2], ["HP-MAX", 0x0024, 2, 2], ["SP", 0x0034, 2, 2],
+                  ["SP-MAX", 0x0044, 2, 2], ["경험치", 0x0f20, 0x4c0, 4] ];
   const COIN_OFF = 0x5484;      // 코인 (u32)
   const EXP_OFF  = 0x0f20;      // 경험치 (u32, 캐릭터0)
   function statsAvailable(){ return buf && info && info.game === "FT3" && buf.length >= 0x5488; }
@@ -275,10 +277,10 @@
     if (!statsAvailable()) { box.innerHTML = '<div class="hex">FT3 실제 세이브(21,704B 이상)에서만 표시됩니다.</div>'; return; }
     let html = '<table><thead><tr><th>#</th>' + STATS.map(s => `<th>${s[0]}</th>`).join("") + '</tr></thead><tbody>';
     for (let i = 0; i < PARTY; i++) {
-      html += `<tr><td>${i+1}</td>`;
-      for (const [, base] of STATS) {
-        const off = base + i*2;
-        html += `<td><input type="number" data-off="${off}" data-size="2" value="${rd(off,2)}" style="width:76px;padding:3px 5px" min="0" max="65535"></td>`;
+      html += `<tr><td style="white-space:nowrap">${NAMES[i] || (i+1)}</td>`;
+      for (const [, base, stride, size] of STATS) {
+        const off = base + i*stride;
+        html += `<td><input type="number" data-off="${off}" data-size="${size}" value="${rd(off,size)}" style="width:${size===4?96:76}px;padding:3px 5px" min="0" max="${size===4?4294967295:65535}"></td>`;
       }
       html += "</tr>";
     }
