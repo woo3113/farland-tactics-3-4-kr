@@ -94,6 +94,32 @@
       <div style="flex:0 0 auto"><button id="hpMaxAll">HP-MAX/SP-MAX도 9999</button></div>
     </div>
 
+    <h2 style="margin-top:18px">2-C. 직업 스탯 (확정 · FT3)
+      <span class="pill" id="jobNote">-</span>
+    </h2>
+    <div class="hex">캐릭터별 6개 직업 슬롯. 오프셋 <code>0x056E + 캐릭*0x4C0 + 슬롯*4</code> (앞=값, 뒤=보조값)<br>
+      직업 순서는 <code>DAT\CLSSCHNG.DAT</code> 기준 (전직 가능한 직업 순서)</div>
+    <div id="jobRows" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:0 0 auto"><button class="pri" id="jobApply">직업값 적용</button></div>
+    </div>
+
+    <h2 style="margin-top:18px" id="ft4Head" style="display:none">4. FT4 아이템 / 스탯 (CFG 정의 99+99)
+      <span class="pill" id="ft4Note">-</span>
+    </h2>
+    <div id="ft4Body" style="display:none">
+      <div class="hex">원작 에디터의 정의 파일(<code>ITEM.CFG</code>, <code>STAT.CFG</code>)에서 그대로 뽑은 필드입니다.<br>
+        최대값이 65535를 넘는 항목은 4바이트(돈 등), 나머지는 2바이트로 편집합니다.</div>
+      <div class="row" style="margin-top:8px">
+        <div style="flex:0 0 auto"><button class="pri" id="ft4Apply">FT4 값 적용</button></div>
+        <div style="flex:0 0 auto"><button id="ft4Max">전부 최대값</button></div>
+      </div>
+      <h3 style="font-size:13px;color:var(--acc);margin:12px 0 4px">아이템 (99)</h3>
+      <div id="itemRows" style="max-height:260px;overflow:auto"></div>
+      <h3 style="font-size:13px;color:var(--acc);margin:12px 0 4px">스탯 (99)</h3>
+      <div id="statRows" style="max-height:260px;overflow:auto"></div>
+    </div>
+
     <h2 style="margin-top:18px">3. 저장</h2>
     <div class="row">
       <div style="flex:0 0 auto"><button class="ok" id="saveBtn">수정한 파일 저장</button></div>
@@ -151,7 +177,7 @@
   "use strict";
   const FT3 = { size:21704, money:0x5480, slot:name => /ODDATA(\d\d)/i.exec(name) };
   const FT3_OLD = { size:21304, money:null, slot:name => /ODDATA(\d\d)/i.exec(name) };
-  const FT4 = { size:704396, money:null, slot:name => /FO2SV_(\d\d)/i.exec(name) };
+  const FT4 = { size:704396, money:8225, slot:name => /FO2SV_(\d\d)/i.exec(name) };   // 돈 = 8225 (ITEM.CFG 정의)
 
   let orig = null;      // 원본 바이트
   let buf  = null;      // 현재 바이트
@@ -196,6 +222,8 @@
       $("saveHint").textContent = `원본 파일명을 유지해 덮어쓰세요.`;
       readMoney();
       renderHp();
+      renderJobs();
+      renderFt4();
       msg("파일을 열었습니다. 원본은 백업해 두세요!", "ok");
     };
     fr.readAsArrayBuffer(f);
@@ -313,6 +341,94 @@
   $("hpMaxAll").onclick = () => {
     if (!statsAvailable()) return;
     $("hpRows").querySelectorAll("table input").forEach(inp => inp.value = 9999);
+  };
+
+  /* ── 직업 스탯 (0x056E + 캐릭*0x4C0 + 슬롯*4) ── */
+  const CLASS = ["없음","전사","승려","마법사","격투가","아처","트랩퍼","마물사","무희","마법검사",
+                 "성검사","신관","마도사","몽크","레인저","풍수사","비스터","검성","음유시인",
+                 "스나이퍼","거성","대마도사","성기사","닌자","현자"];
+  const JOBSEQ = [[1,3,2,9,10,17],[8,2,5,15,14,18],[6,5,7,14,16,19],[2,4,1,13,11,20],
+                  [7,3,8,12,16,21],[2,1,4,10,13,22],[3,1,7,9,12,23],[6,3,2,15,11,24]];
+  const JOB_BASE = 0x056e, JOB_STRIDE = 0x4c0;
+  function renderJobs(){
+    const box = $("jobRows");
+    if (!statsAvailable()) { box.innerHTML = '<div class="hex">FT3 실제 세이브에서만 표시됩니다.</div>';
+      $("jobNote").textContent = "이 파일에서는 사용 불가"; return; }
+    $("jobNote").textContent = "캐릭터별 6직업";
+    let html = '<table><thead><tr><th>캐릭터</th><th>직업 슬롯 (값 / 보조)</th></tr></thead><tbody>';
+    for (let i = 0; i < PARTY; i++) {
+      html += `<tr><td style="white-space:nowrap">${NAMES[i] || i+1}</td><td style="white-space:nowrap">`;
+      for (let c = 0; c < 6; c++) {
+        const off = JOB_BASE + i*JOB_STRIDE + c*4;
+        const nm = CLASS[JOBSEQ[i][c]] || "?";
+        html += `<span class="hex" style="display:inline-block;min-width:64px">${nm}</span>`
+             +  `<input type="number" data-off="${off}" data-size="2" value="${rd(off,2)}" style="width:62px;padding:2px 4px" min="0" max="65535">`
+             +  `<input type="number" data-off="${off+2}" data-size="2" value="${rd(off+2,2)}" style="width:62px;padding:2px 4px" min="0" max="65535">`
+             +  `&nbsp;`;
+      }
+      html += "</td></tr>";
+    }
+    html += "</tbody></table>";
+    box.innerHTML = html;
+  }
+  $("jobApply").onclick = () => {
+    if (!statsAvailable()) return;
+    let n = 0;
+    $("jobRows").querySelectorAll("input").forEach(inp => {
+      const off = parseInt(inp.dataset.off, 10), v = parseInt(inp.value, 10);
+      if (!isNaN(v) && v >= 0 && v <= 65535 && rd(off,2) !== v) { wr(off,2,v); n++; }
+    });
+    renderJobs();
+    msg(`직업값 ${n}개 적용 (저장 버튼을 누르세요)`, n ? "ok" : "warn");
+  };
+
+  /* FT4: CFG(에디터 정의 파일)에서 그대로 추출한 필드 테이블 */
+  const FT4_ITEMS = [{n:"돈",o:8225,m:999999999},{n:"E-쥬얼",o:8373,m:999},{n:"요정의 구슬",o:8377,m:999},{n:"여신의 구슬",o:8381,m:999},{n:"용신의 구슬",o:8385,m:999},{n:"태양의 조각",o:8393,m:999},{n:"물소리 방울",o:8397,m:999},{n:"숲의 공기",o:8401,m:999},{n:"치즈",o:8405,m:999},{n:"HP스포이트",o:8409,m:999},{n:"MP스포이트",o:8413,m:999},{n:"SP스포이트",o:8417,m:999},{n:"자명종",o:8421,m:999},{n:"로그 열매",o:8437,m:999},{n:"오닷치",o:8441,m:999},{n:"용사의눈물",o:8449,m:999},{n:"호라노우치",o:8461,m:999},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0},{n:"0",o:0,m:0}];
+  const FT4_STATS = [{n:"유니 HP",o:1181,m:999},{n:"유니 MP",o:1193,m:999},{n:"유니 SP",o:1205,m:999},{n:"유니 엘리먼트",o:1285,m:999},{n:"실버 HP",o:1769,m:999},{n:"실버 MP",o:1781,m:999},{n:"실버 SP",o:1793,m:999},{n:"실버 엘리먼트",o:1873,m:999},{n:"바즈 HP",o:2357,m:999},{n:"바즈 MP",o:2369,m:999},{n:"바즈 SP",o:2381,m:999},{n:"바즈 엘리먼트",o:2461,m:999},{n:"리티아 HP",o:2945,m:999},{n:"리티아 MP",o:2957,m:999},{n:"리티아 SP",o:2969,m:999},{n:"리티아 엘리먼트",o:3049,m:999},{n:"보즈 HP",o:3533,m:999},{n:"보즈 MP",o:3545,m:999},{n:"보즈 SP",o:3557,m:999},{n:"보즈 엘리먼트",o:3637,m:999},{n:"란 HP",o:4121,m:999},{n:"란 MP",o:4133,m:999},{n:"란 SP",o:4145,m:999},{n:"란 엘리먼트",o:4225,m:999},{n:"카스톨 HP",o:4709,m:999},{n:"카스톨 MP",o:4721,m:999},{n:"카스톨 SP",o:4733,m:999},{n:"카스톨 엘리먼트",o:4813,m:999},{n:"포르쿠스 HP",o:5297,m:999},{n:"포르쿠스 MP",o:5309,m:999},{n:"포르쿠스 SP",o:5321,m:999},{n:"포르쿠스 엘리먼트",o:5401,m:999},{n:"카인 HP",o:5885,m:999},{n:"카인 MP",o:5897,m:999},{n:"카인 SP",o:5909,m:999},{n:"카인 엘리먼트",o:5989,m:999},{n:"아크 HP",o:6473,m:999},{n:"아크 MP",o:6485,m:999},{n:"아크 SP",o:6497,m:999},{n:"아크 엘리먼트",o:6577,m:999},{n:"카 HP",o:7649,m:999},{n:"카 MP",o:7661,m:999},{n:"카 SP",o:7673,m:999},{n:"카 엘리먼트",o:7753,m:999},{n:"돈",o:8225,m:9999999},{n:"엘릭스",o:8253,m:999},{n:"정신드는 약",o:8297,m:999},{n:"힘의 열매",o:8357,m:999},{n:"수호석",o:8361,m:999},{n:"매의 발톱",o:8365,m:999},{n:"비천석",o:8369,m:999},{n:"요정의 구슬",o:8377,m:999},{n:"여신의 구슬",o:8381,m:999},{n:"용신의 구슬",o:8385,m:999},{n:"리티아 STR",o:3065,m:999},{n:"리티아 AGL",o:3069,m:999},{n:"리티아 BDY",o:3073,m:999},{n:"리티아 TCH",o:3077,m:999},{n:"보즈 STR",o:3653,m:999},{n:"보즈 AGL",o:3657,m:999},{n:"보즈 BDY",o:3661,m:999},{n:"보즈 TCH",o:3665,m:999},{n:"카인 STR",o:6005,m:999},{n:"카인 AGL",o:6009,m:999},{n:"카인 BDY",o:6013,m:999},{n:"카인 TCH",o:6017,m:999},{n:"카 STR",o:7769,m:999},{n:"카 AGL",o:7773,m:999},{n:"카 BDY",o:7777,m:999},{n:"카 TCH",o:7781,m:999},{n:"유니 STR",o:1301,m:999},{n:"유니 AGL",o:1305,m:999},{n:"유니 BDY",o:1309,m:999},{n:"유니 TCH",o:1313,m:999},{n:"실버 STR",o:1889,m:999},{n:"실버 AGL",o:1893,m:999},{n:"실버 BDY",o:1897,m:999},{n:"실버 TCH",o:1901,m:999},{n:"바즈 STR",o:2477,m:999},{n:"바즈 AGL",o:2481,m:999},{n:"바즈 BDY",o:2485,m:999},{n:"바즈 TCH",o:2489,m:999},{n:"란 STR",o:4241,m:999},{n:"란 AGL",o:4245,m:999},{n:"란 BDY",o:4249,m:999},{n:"란 TCH",o:4253,m:999},{n:"카스톨 STR",o:4829,m:999},{n:"카스톨 AGL",o:4833,m:999},{n:"카스톨 BDY",o:4837,m:999},{n:"카스톨 TCH",o:4841,m:999},{n:"포르쿠스 STR",o:5417,m:999},{n:"포르쿠스 AGL",o:5421,m:999},{n:"포르쿠스 BDY",o:5425,m:999},{n:"포르쿠스 TCH",o:5429,m:999},{n:"아크 STR",o:6593,m:999},{n:"아크 AGL",o:6597,m:999},{n:"아크 BDY",o:6601,m:999},{n:"아크 TCH",o:6605,m:999},{n:"0",o:0,m:0}];
+
+  /* ── FT4: CFG 정의 기반 아이템/스탯 ── */
+  function ft4Available(){ return buf && info && info.game === "FT4"; }
+  function ft4Size(m){ return (m > 65535) ? 4 : 2; }
+  function renderFt4(){
+    const head = $("ft4Head"), body = $("ft4Body");
+    const show = ft4Available();
+    head.style.display = show ? "block" : "none";
+    body.style.display = show ? "block" : "none";
+    if (!show) return;
+    $("ft4Note").textContent = FT4_ITEMS.length + " + " + FT4_STATS.length;
+    const mk = (recs) => {
+      let h = '<table><tbody>';
+      recs.forEach((r, i) => {
+        const sz = ft4Size(r.m);
+        const v = rd(r.o, sz);
+        h += `<tr><td style="white-space:nowrap">${r.n}</td>`
+          +  `<td class="hex">${('0x'+(r.o).toString(16).toUpperCase()).padStart(6,' ')}</td>`
+          +  `<td><input type="number" data-off="${r.o}" data-size="${sz}" value="${v}" `
+          +  `style="width:${sz===4?110:80}px;padding:2px 5px" min="0" max="${r.m||999999999}"></td>`
+          +  `<td class="hex">max ${r.m}</td></tr>`;
+      });
+      return h + "</tbody></table>";
+    };
+    $("itemRows").innerHTML = mk(FT4_ITEMS);
+    $("statRows").innerHTML = mk(FT4_STATS);
+  }
+  $("ft4Apply").onclick = () => {
+    if (!ft4Available()) return;
+    let n = 0;
+    $("ft4Body").querySelectorAll("input").forEach(inp => {
+      const off = parseInt(inp.dataset.off, 10), sz = parseInt(inp.dataset.size, 10);
+      const v = parseInt(inp.value, 10);
+      if (!isNaN(v) && v >= 0 && rd(off, sz) !== v) { wr(off, sz, v); n++; }
+    });
+    renderFt4();
+    msg(`FT4 값 ${n}개 적용 (저장 버튼을 누르세요)`, n ? "ok" : "warn");
+  };
+  $("ft4Max").onclick = () => {
+    if (!ft4Available()) return;
+    $("ft4Body").querySelectorAll("input").forEach(inp => {
+      const m = parseInt(inp.getAttribute("max"), 10);
+      inp.value = isNaN(m) ? 999 : m;
+    });
   };
 
   /* ── 저장 ── */
