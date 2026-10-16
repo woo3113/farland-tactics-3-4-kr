@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파랜드 택틱스 3/4 세이브 에디터</title>
+<style>
+  :root { --bg:#101418; --panel:#181f26; --line:#2a3540; --fg:#dbe6f0; --dim:#7d8fa1; --acc:#3ea6ff; --ok:#44d07b; --warn:#ffb648; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family:"Malgun Gothic","Segoe UI",system-ui,sans-serif; font-size:14px; }
+  header { padding:14px 18px; background:var(--panel); border-bottom:1px solid var(--line);
+           display:flex; align-items:center; gap:14px; flex-wrap:wrap; position:sticky; top:0; z-index:5; }
+  h1 { font-size:17px; margin:0; font-weight:700; }
+  h1 small { color:var(--dim); font-weight:400; font-size:12px; margin-left:6px; }
+  .main { display:grid; grid-template-columns: 1fr 1fr; gap:14px; padding:14px; }
+  @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .card h2 { font-size:14px; margin:0 0 10px; color:var(--acc); }
+  label { display:block; color:var(--dim); font-size:12px; margin:8px 0 3px; }
+  input, select, button { font-family:inherit; font-size:14px; }
+  input[type=text], input[type=number] { width:100%; padding:7px 9px; background:#0d1216;
+      border:1px solid var(--line); color:var(--fg); border-radius:6px; }
+  button { padding:7px 12px; background:#22303c; color:var(--fg); border:1px solid var(--line);
+      border-radius:6px; cursor:pointer; }
+  button:hover { background:#2c3d4c; }
+  button.pri { background:var(--acc); color:#04121f; border-color:var(--acc); font-weight:700; }
+  button.ok  { background:var(--ok); color:#04140a; border-color:var(--ok); font-weight:700; }
+  .row { display:flex; gap:8px; align-items:end; flex-wrap:wrap; }
+  .row > div { flex:1 1 120px; }
+  table { width:100%; border-collapse:collapse; font-family:Consolas,monospace; font-size:12.5px; }
+  th, td { text-align:left; padding:4px 6px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:400; }
+  tr.hit { cursor:pointer; }
+  tr.hit:hover { background:#20303c; }
+  tr.sel { background:#1d3a52; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#22303c;
+          color:var(--dim); font-size:11.5px; margin-left:6px; }
+  .msg { margin-top:10px; padding:8px 10px; border-radius:6px; font-size:13px; display:none; }
+  .msg.show { display:block; }
+  .msg.ok { background:#12301f; color:#9df3bd; border:1px solid #1e5c38; }
+  .msg.err { background:#331717; color:#ffc0c0; border:1px solid #6a2a2a; }
+  .msg.warn { background:#33280f; color:#ffdf9d; border:1px solid #6b5520; }
+  .hex { font-family:Consolas,monospace; font-size:12px; color:var(--dim); }
+  .footer { padding:0 14px 24px; color:var(--dim); font-size:12px; }
+  .kv { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .kv div { background:#0d1216; border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
+  .kv b { color:var(--fg); }
+  a { color:var(--acc); }
+</style>
+</head>
+<body>
+<header>
+  <h1>파랜드 택틱스 3/4 세이브 에디터 <small>v0.9 — 파일 하나로 동작 (설치 불필요)</small></h1>
+  <span id="fileInfo" class="pill">세이브 파일을 열어주세요</span>
+</header>
+
+<div class="main">
+  <!-- ───────── 왼쪽: 파일 / 소지금 / 저장 ───────── -->
+  <div class="card">
+    <h2>1. 세이브 파일</h2>
+    <input type="file" id="fileInput" accept=".FOS,.fos,.fos.bak,.bin">
+    <div class="kv" id="info"></div>
+
+    <h2 style="margin-top:18px">2. 소지금</h2>
+    <div class="row">
+      <div>
+        <label>현재 값 (4바이트, 오프셋 <span id="moneyOff">-</span>)</label>
+        <input type="number" id="moneyVal" min="0" max="999999999" placeholder="값">
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="moneyRead">읽기</button>
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="pri" id="moneyWrite">적용</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:0 0 auto"><button id="m1000">+1000</button></div>
+      <div style="flex:0 0 auto"><button id="mMax">최대(999999)</button></div>
+      <div style="flex:0 0 auto"><button id="mZero">0으로</button></div>
+    </div>
+    <div id="moneyNote" class="hex" style="margin-top:6px"></div>
+
+    <h2 style="margin-top:18px">3. 저장</h2>
+    <div class="row">
+      <div style="flex:0 0 auto"><button class="ok" id="saveBtn">수정한 파일 저장</button></div>
+      <div style="flex:0 0 auto"><button id="revertBtn">수정 취소(되돌리기)</button></div>
+    </div>
+    <div id="saveHint" class="hex" style="margin-top:6px"></div>
+  </div>
+
+  <!-- ───────── 오른쪽: 값 찾아서 바꾸기 ───────── -->
+  <div class="card">
+    <h2>값 찾아서 바꾸기 (돈/HP/아이템 수 등)</h2>
+    <div class="hex">게임에서 본 숫자를 입력해 찾은 뒤, 원하는 값으로 바꿉니다. (2바이트/4바이트 선택)</div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>찾을 값</label>
+        <input type="text" id="findVal" placeholder="예: 200  또는  0xC8">
+      </div>
+      <div style="flex:0 0 auto">
+        <label>크기</label>
+        <select id="findSize"><option value="4">4바이트</option><option value="2">2바이트</option><option value="1">1바이트</option></select>
+      </div>
+      <div style="flex:0 0 auto"><button class="pri" id="findBtn">찾기</button></div>
+    </div>
+
+    <div id="hitsWrap" style="margin-top:10px; max-height:280px; overflow:auto; display:none">
+      <table>
+        <thead><tr><th>오프셋</th><th>현재 값</th><th>주변(hex)</th></tr></thead>
+        <tbody id="hitsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label>새 값 (선택한 위치에 적용)</label>
+        <input type="number" id="newVal" placeholder="예: 9999">
+      </div>
+      <div style="flex:0 0 auto"><button class="pri" id="patchBtn">선택 위치 바꾸기</button></div>
+      <div style="flex:0 0 auto"><button id="patchAllBtn">찾은 곳 전부</button></div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </div>
+</div>
+
+<div class="footer">
+  <b>사용법</b> — ① 세이브 파일을 열고 ② 값을 고친 뒤 ③ <b>수정한 파일 저장</b>을 눌러 나온 파일로 원본을 덮어쓰면 됩니다.<br>
+  ⚠️ 항상 <b>원본 세이브를 백업</b>해 두세요. 파일 이름은 그대로 유지해야 게임이 인식합니다
+  (FT3: <span class="hex">ODDATA00.FOS</span> … / FT4: <span class="hex">FO2SV_00.fos</span> …).<br>
+  세이브 위치 — Winlator: <span class="hex">/sdcard/Winlator/FT3(K)/ODDATA00.FOS</span> · PC: 게임 폴더
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const FT3 = { size:21704, money:0x5480, slot:name => /ODDATA(\d\d)/i.exec(name) };
+  const FT3_OLD = { size:21304, money:null, slot:name => /ODDATA(\d\d)/i.exec(name) };
+  const FT4 = { size:704396, money:null, slot:name => /FO2SV_(\d\d)/i.exec(name) };
+
+  let orig = null;      // 원본 바이트
+  let buf  = null;      // 현재 바이트
+  let info = null;      // 감지 정보
+  let hits = [];
+  let selIdx = -1;
+
+  const $ = id => document.getElementById(id);
+  function msg(text, kind){ const m=$("msg"); m.className="msg show "+(kind||"ok"); m.textContent=text; }
+  function hex(n, w){ return "0x" + n.toString(16).toUpperCase().padStart(w||6,"0"); }
+  function ctx(off, len){ len = len||12; const s=Math.max(0,off-4), e=Math.min(buf.length, off+len);
+      return Array.from(buf.slice(s,e)).map(b=>b.toString(16).padStart(2,"0")).join(" "); }
+  function rd(off,size){ let v=0; for(let i=size-1;i>=0;i--) v = v*256 + buf[off+i]; return v; }
+  function wr(off,size,val){ val = Math.max(0, Math.min(val, size===4?4294967295:Math.pow(256,size)-1));
+      for(let i=0;i<size;i++){ buf[off+i] = val & 0xff; val = Math.floor(val/256); } }
+  function detect(name, size){
+    if (size===FT3.size || size===FT3_OLD.size) return {game:"FT3", def:FT3, slot:FT3.slot(name)};
+    if (size===FT4.size) return {game:"FT4", def:FT4, slot:FT4.slot(name)};
+    return {game:"?", def:null, slot:null};
+  }
+
+  /* ── 파일 열기 ── */
+  $("fileInput").addEventListener("change", ev => {
+    const f = ev.target.files[0]; if(!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      orig = new Uint8Array(fr.result);
+      buf  = orig.slice();
+      info = detect(f.name, buf.length);
+      hits = []; selIdx = -1; $("hitsWrap").style.display="none";
+      let s = "";
+      s += `<div>파일 <b>${f.name}</b></div><div>크기 <b>${buf.length.toLocaleString()}</b> B</div>`;
+      s += `<div>게임 <b>${info.game}</b></div>`;
+      s += `<div>슬롯 <b>${info.slot ? info.slot[1] : "?"}</b></div>`;
+      s += `<div>소지금 필드 <b>${info.def && info.def.money!=null ? hex(info.def.money) : "미확인"}</b></div>`;
+      $("info").innerHTML = s;
+      $("fileInfo").textContent = f.name;
+      $("moneyOff").textContent = (info.def && info.def.money!=null) ? hex(info.def.money) : "미확인";
+      $("moneyNote").textContent = (info.def && info.def.money!=null)
+        ? "이 게임/버전에서 소지금 위치가 확인되었습니다."
+        : "이 게임(버전)은 소지금 위치가 아직 확인되지 않았습니다 → 아래 '값 찾아서 바꾸기'로 찾으세요.\n(예: 게임에서 소지금 200 → 찾을 값 200 → 4바이트)";
+      $("saveHint").textContent = `원본 파일명을 유지해 덮어쓰세요.`;
+      readMoney();
+      msg("파일을 열었습니다. 원본은 백업해 두세요!", "ok");
+    };
+    fr.readAsArrayBuffer(f);
+  });
+
+  /* ── 소지금 ── */
+  function readMoney(){
+    if(!buf || !info || !info.def || info.def.money==null) return;
+    $("moneyVal").value = rd(info.def.money, 4);
+  }
+  $("moneyRead").onclick = readMoney;
+  $("moneyWrite").onclick = () => {
+    if(!buf || !info || !info.def || info.def.money==null) return msg("소지금 위치를 알 수 없습니다.", "err");
+    const v = parseInt($("moneyVal").value, 10);
+    if(isNaN(v)) return msg("숫자를 입력하세요.", "err");
+    const old = rd(info.def.money,4);
+    wr(info.def.money, 4, v);
+    msg(`소지금 ${old} → ${rd(info.def.money,4)} 로 변경했습니다. (저장 버튼을 누르세요)`, "ok");
+  };
+  $("m1000").onclick = () => { if(!info||!info.def||info.def.money==null) return;
+    const v = rd(info.def.money,4); $("moneyVal").value = v+1000; };
+  $("mMax").onclick = () => { $("moneyVal").value = 999999; };
+  $("mZero").onclick = () => { $("moneyVal").value = 0; };
+
+  /* ── 찾기 ── */
+  function parseVal(s){
+    s = (s||"").trim();
+    if(/^0x/i.test(s)) return parseInt(s,16);
+    return parseInt(s,10);
+  }
+  $("findBtn").onclick = () => {
+    if(!buf) return msg("먼저 세이브 파일을 열어주세요.", "err");
+    const v = parseVal($("findVal").value), size = parseInt($("findSize").value,10);
+    if(isNaN(v)) return msg("찾을 값을 입력하세요.", "err");
+    hits = [];
+    for(let i=0;i<=buf.length-size;i++) if(rd(i,size)===v) hits.push(i);
+    const tb = $("hitsBody"); tb.innerHTML = "";
+    hits.forEach((off,i) => {
+      const tr = document.createElement("tr");
+      tr.className = "hit";
+      tr.innerHTML = `<td>${hex(off)}</td><td>${rd(off,size)}</td><td class="hex">${ctx(off,size+8)}</td>`;
+      tr.onclick = () => { selIdx = i; [...tb.children].forEach(c=>c.classList.remove("sel")); tr.classList.add("sel"); };
+      tb.appendChild(tr);
+    });
+    $("hitsWrap").style.display = hits.length ? "block" : "none";
+    msg(hits.length ? `${hits.length}개 찾았습니다. 바꿀 위치를 클릭해 선택하세요.`
+                    : `값 ${v} 를 찾지 못했습니다. (다른 크기로도 시도해 보세요)`,
+        hits.length ? "ok" : "warn");
+  };
+  $("patchBtn").onclick = () => {
+    if(!buf) return;
+    if(selIdx < 0) return msg("목록에서 위치를 먼저 선택하세요.", "err");
+    const nv = parseInt($("newVal").value,10); if(isNaN(nv)) return msg("새 값을 입력하세요.","err");
+    const size = parseInt($("findSize").value,10), off = hits[selIdx];
+    const ov = rd(off,size); wr(off,size,nv);
+    msg(`${hex(off)} : ${ov} → ${rd(off,size)} 변경했습니다.`, "ok");
+    const tb = $("hitsBody"); if(tb.children[selIdx]) tb.children[selIdx].cells[1].textContent = rd(off,size);
+  };
+  $("patchAllBtn").onclick = () => {
+    if(!buf || !hits.length) return msg("먼저 값을 찾으세요.","err");
+    const nv = parseInt($("newVal").value,10); if(isNaN(nv)) return msg("새 값을 입력하세요.","err");
+    const size = parseInt($("findSize").value,10);
+    hits.forEach(off => wr(off,size,nv));
+    [...$("hitsBody").children].forEach(tr => tr.cells[1].textContent = nv);
+    msg(`${hits.length}곳을 ${nv} 로 바꿨습니다.`, "ok");
+  };
+
+  /* ── 저장 ── */
+  $("saveBtn").onclick = () => {
+    if(!buf) return msg("파일이 없습니다.","err");
+    const name = $("fileInfo").textContent || "save.FOS";
+    const blob = new Blob([buf], {type:"application/octet-stream"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    msg(`저장했습니다: ${name} — 받은 파일로 원본을 덮어쓰세요.`, "ok");
+  };
+  $("revertBtn").onclick = () => {
+    if(!orig) return;
+    buf = orig.slice(); hits=[]; selIdx=-1; $("hitsWrap").style.display="none";
+    readMoney(); msg("수정을 취소했습니다.", "warn");
+  };
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("drop", e => {
+    e.preventDefault();
+    if(e.dataTransfer.files[0]) { $("fileInput").files = e.dataTransfer.files;
+      $("fileInput").dispatchEvent(new Event("change")); }
+  });
+})();
+</script>
+</body>
+</html>
