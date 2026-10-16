@@ -82,14 +82,16 @@
     </div>
     <div id="moneyNote" class="hex" style="margin-top:6px"></div>
 
-    <h2 style="margin-top:18px">2-B. 캐릭터 HP (확정 · FT3)
+    <h2 style="margin-top:18px">2-B. 캐릭터 스탯 (확정 · FT3)
       <span class="pill" id="hpNote">-</span>
     </h2>
-    <div class="hex">원작 DOS 에디터가 보여준 HP 값과 파일 값이 일치 확인됨 (캐릭터 i = 0x0014 + i×0x20).</div>
+    <div class="hex">원작 DOS 에디터로 검증된 오프셋입니다 (스탯별 u16 배열, 8명).<br>
+      HP <code>0x0014+i*2</code> · HP-MAX <code>0x0024+i*2</code> · SP <code>0x0034+i*2</code> · SP-MAX <code>0x0044+i*2</code> · 경험치(u32) <code>0x0F20</code></div>
     <div id="hpRows" style="margin-top:8px"></div>
     <div class="row" style="margin-top:8px">
-      <div style="flex:0 0 auto"><button class="pri" id="hpApply">HP 적용</button></div>
-      <div style="flex:0 0 auto"><button id="hpMax">전부 9999</button></div>
+      <div style="flex:0 0 auto"><button class="pri" id="hpApply">스탯 적용</button></div>
+      <div style="flex:0 0 auto"><button id="hpMax">HP/SP 전부 9999</button></div>
+      <div style="flex:0 0 auto"><button id="hpMaxAll">HP-MAX/SP-MAX도 9999</button></div>
     </div>
 
     <h2 style="margin-top:18px">3. 저장</h2>
@@ -261,38 +263,54 @@
     msg(`${hits.length}곳을 ${nv} 로 바꿨습니다.`, "ok");
   };
 
-  /* ── 캐릭터 HP (확정: 0x0014 + i*0x20) ── */
-  const HP_BASE = 0x14, HP_STRIDE = 0x20, HP_COUNT = 8;
-  function hpAvailable(){ return buf && info && info.game === "FT3" && buf.length >= HP_BASE + HP_COUNT*HP_STRIDE; }
+  /* ── 캐릭터 스탯 (원작 DOS 에디터로 확정한 오프셋) ── */
+  const PARTY   = 8;
+  const STATS = [ ["HP", 0x0014], ["HP-MAX", 0x0024], ["SP", 0x0034], ["SP-MAX", 0x0044] ];
+  const COIN_OFF = 0x5484;      // 코인 (u32)
+  const EXP_OFF  = 0x0f20;      // 경험치 (u32, 캐릭터0)
+  function statsAvailable(){ return buf && info && info.game === "FT3" && buf.length >= 0x5488; }
   function renderHp(){
     const box = $("hpRows");
-    $("hpNote").textContent = hpAvailable() ? (HP_BASE.toString(16).toUpperCase() + "h + i*20h") : "이 파일에서는 사용 불가";
-    if (!hpAvailable()) { box.innerHTML = '<div class="hex">FT3 실제 세이브(21,704B)에서만 표시됩니다.</div>'; return; }
-    let html = '<table><thead><tr><th>캐릭터</th><th>HP</th><th>HP-MAX?</th><th>?</th><th>?</th><th>?</th></tr></thead><tbody>';
-    for (let i = 0; i < HP_COUNT; i++) {
-      const b = HP_BASE + i*HP_STRIDE;
+    $("hpNote").textContent = statsAvailable() ? "확정" : "이 파일에서는 사용 불가";
+    if (!statsAvailable()) { box.innerHTML = '<div class="hex">FT3 실제 세이브(21,704B 이상)에서만 표시됩니다.</div>'; return; }
+    let html = '<table><thead><tr><th>#</th>' + STATS.map(s => `<th>${s[0]}</th>`).join("") + '</tr></thead><tbody>';
+    for (let i = 0; i < PARTY; i++) {
       html += `<tr><td>${i+1}</td>`;
-      for (let k = 0; k < 5; k++)
-        html += `<td><input type="number" data-off="${b + k*2}" value="${rd(b + k*2, 2)}" style="width:74px;padding:3px 5px" min="0" max="65535"></td>`;
+      for (const [, base] of STATS) {
+        const off = base + i*2;
+        html += `<td><input type="number" data-off="${off}" data-size="2" value="${rd(off,2)}" style="width:76px;padding:3px 5px" min="0" max="65535"></td>`;
+      }
       html += "</tr>";
     }
-    html += "</tbody></table>";
+    html += '</tbody></table>';
+    html += `<div class="row" style="margin-top:8px">
+      <div><label>코인 (u32, 0x5484)</label><input type="number" id="coinVal" data-off="${COIN_OFF}" data-size="4" value="${rd(COIN_OFF,4)}"></div>
+      <div><label>경험치0 (u32, 0x0f20)</label><input type="number" id="expVal" data-off="${EXP_OFF}" data-size="4" value="${rd(EXP_OFF,4)}"></div>
+    </div>`;
     box.innerHTML = html;
   }
   $("hpApply").onclick = () => {
-    if (!hpAvailable()) return msg("FT3 실제 세이브에서만 사용할 수 있습니다.", "err");
+    if (!statsAvailable()) return msg("FT3 실제 세이브에서만 사용할 수 있습니다.", "err");
     let n = 0;
     $("hpRows").querySelectorAll("input").forEach(inp => {
-      const off = parseInt(inp.dataset.off, 10);
+      const off = parseInt(inp.dataset.off, 10), size = parseInt(inp.dataset.size || "2", 10);
       const v = parseInt(inp.value, 10);
-      if (!isNaN(v) && v >= 0 && v <= 65535 && rd(off,2) !== v) { wr(off, 2, v); n++; }
+      if (!isNaN(v) && v >= 0 && rd(off,size) !== v) { wr(off, size, v); n++; }
     });
     renderHp();
-    msg(`캐릭터 스탯 ${n}개 값 적용 (저장 버튼을 누르세요)`, n ? "ok" : "warn");
+    msg(`스탯 ${n}개 값 적용 (저장 버튼을 누르세요)`, n ? "ok" : "warn");
   };
   $("hpMax").onclick = () => {
-    if (!hpAvailable()) return;
-    $("hpRows").querySelectorAll("input").forEach(inp => inp.value = 9999);
+    if (!statsAvailable()) return;
+    // HP(1열)·SP(3열) 현재치만 9999
+    $("hpRows").querySelectorAll("table input").forEach(inp => {
+      const ci = inp.closest("td").cellIndex;
+      if (ci === 1 || ci === 3) inp.value = 9999;
+    });
+  };
+  $("hpMaxAll").onclick = () => {
+    if (!statsAvailable()) return;
+    $("hpRows").querySelectorAll("table input").forEach(inp => inp.value = 9999);
   };
 
   /* ── 저장 ── */
