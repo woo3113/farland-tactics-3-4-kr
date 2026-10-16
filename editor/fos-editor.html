@@ -82,6 +82,16 @@
     </div>
     <div id="moneyNote" class="hex" style="margin-top:6px"></div>
 
+    <h2 style="margin-top:18px">2-B. 캐릭터 HP (확정 · FT3)
+      <span class="pill" id="hpNote">-</span>
+    </h2>
+    <div class="hex">원작 DOS 에디터가 보여준 HP 값과 파일 값이 일치 확인됨 (캐릭터 i = 0x0014 + i×0x20).</div>
+    <div id="hpRows" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:0 0 auto"><button class="pri" id="hpApply">HP 적용</button></div>
+      <div style="flex:0 0 auto"><button id="hpMax">전부 9999</button></div>
+    </div>
+
     <h2 style="margin-top:18px">3. 저장</h2>
     <div class="row">
       <div style="flex:0 0 auto"><button class="ok" id="saveBtn">수정한 파일 저장</button></div>
@@ -183,6 +193,7 @@
         : "이 게임(버전)은 소지금 위치가 아직 확인되지 않았습니다 → 아래 '값 찾아서 바꾸기'로 찾으세요.\n(예: 게임에서 소지금 200 → 찾을 값 200 → 4바이트)";
       $("saveHint").textContent = `원본 파일명을 유지해 덮어쓰세요.`;
       readMoney();
+      renderHp();
       msg("파일을 열었습니다. 원본은 백업해 두세요!", "ok");
     };
     fr.readAsArrayBuffer(f);
@@ -248,6 +259,40 @@
     hits.forEach(off => wr(off,size,nv));
     [...$("hitsBody").children].forEach(tr => tr.cells[1].textContent = nv);
     msg(`${hits.length}곳을 ${nv} 로 바꿨습니다.`, "ok");
+  };
+
+  /* ── 캐릭터 HP (확정: 0x0014 + i*0x20) ── */
+  const HP_BASE = 0x14, HP_STRIDE = 0x20, HP_COUNT = 8;
+  function hpAvailable(){ return buf && info && info.game === "FT3" && buf.length >= HP_BASE + HP_COUNT*HP_STRIDE; }
+  function renderHp(){
+    const box = $("hpRows");
+    $("hpNote").textContent = hpAvailable() ? (HP_BASE.toString(16).toUpperCase() + "h + i*20h") : "이 파일에서는 사용 불가";
+    if (!hpAvailable()) { box.innerHTML = '<div class="hex">FT3 실제 세이브(21,704B)에서만 표시됩니다.</div>'; return; }
+    let html = '<table><thead><tr><th>캐릭터</th><th>HP</th><th>HP-MAX?</th><th>?</th><th>?</th><th>?</th></tr></thead><tbody>';
+    for (let i = 0; i < HP_COUNT; i++) {
+      const b = HP_BASE + i*HP_STRIDE;
+      html += `<tr><td>${i+1}</td>`;
+      for (let k = 0; k < 5; k++)
+        html += `<td><input type="number" data-off="${b + k*2}" value="${rd(b + k*2, 2)}" style="width:74px;padding:3px 5px" min="0" max="65535"></td>`;
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    box.innerHTML = html;
+  }
+  $("hpApply").onclick = () => {
+    if (!hpAvailable()) return msg("FT3 실제 세이브에서만 사용할 수 있습니다.", "err");
+    let n = 0;
+    $("hpRows").querySelectorAll("input").forEach(inp => {
+      const off = parseInt(inp.dataset.off, 10);
+      const v = parseInt(inp.value, 10);
+      if (!isNaN(v) && v >= 0 && v <= 65535 && rd(off,2) !== v) { wr(off, 2, v); n++; }
+    });
+    renderHp();
+    msg(`캐릭터 스탯 ${n}개 값 적용 (저장 버튼을 누르세요)`, n ? "ok" : "warn");
+  };
+  $("hpMax").onclick = () => {
+    if (!hpAvailable()) return;
+    $("hpRows").querySelectorAll("input").forEach(inp => inp.value = 9999);
   };
 
   /* ── 저장 ── */
