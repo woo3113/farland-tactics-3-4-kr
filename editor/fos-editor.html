@@ -527,9 +527,28 @@
   };
   $("datFilter").oninput = () => renderDat();
 
+  /* 모든 입력칸의 값을 버퍼에 반영 (저장 시 자동 호출) */
+  function commitAll(){
+    if (!buf) return 0;
+    let n = 0;
+    document.querySelectorAll("input[data-off]").forEach(inp => {
+      const off = parseInt(inp.dataset.off, 10);
+      const sz = parseInt(inp.dataset.size || "2", 10);
+      const v = parseInt(inp.value, 10);
+      if (!isNaN(v) && v >= 0 && rd(off, sz) !== v) { wr(off, sz, v); n++; }
+    });
+    // 소지금 입력칸 (data-off 없음)
+    if (info && info.def && info.def.money != null) {
+      const mv = parseInt($("moneyVal").value, 10);
+      if (!isNaN(mv) && rd(info.def.money, 4) !== mv) { wr(info.def.money, 4, mv); n++; }
+    }
+    return n;
+  }
+
   /* ── 저장 ── */
   $("saveBtn").onclick = () => {
     if(!buf) return msg("파일이 없습니다.","err");
+    const n = commitAll();                     // 입력한 값 전부 반영
     const name = $("fileInfo").textContent || "save.FOS";
     const blob = new Blob([buf], {type:"application/octet-stream"});
     const a = document.createElement("a");

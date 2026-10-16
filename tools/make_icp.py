@@ -30,31 +30,36 @@ XBOX_DESC = "6dc63f813a1022bc62973a1a4c664c4c53b1c2c3"      # Xbox Wireless Cont
 AIRX_DESC = "9e3e78dc958266481b45f720d74c77b8e971889c"      # AIR X Controller (포켓맥스)
 
 # 버튼/십자키 (두 기기 공통)
+# ★★ 이 게임은 "키보드 게임"이다 (게임 내 CONFIGURATION 화면 실측):
+#     이동 = 방향키 / 결정·공격 = Z / 취소 = X / 결정·주문사용 = C
+#     메뉴 = Space / 순서교체 = A,S / 방향전환 = Ctrl + 방향키
+#   → 마우스 매핑은 쓰지 않는다.
 BUTTON_BINDINGS = [
-    (19, "MOUSE_MOVE_UP"),       # D-패드 ↑ : 커서 위
-    (20, "MOUSE_MOVE_DOWN"),     # D-패드 ↓ : 커서 아래
-    (21, "MOUSE_MOVE_LEFT"),     # D-패드 ← : 커서 왼쪽
-    (22, "MOUSE_MOVE_RIGHT"),    # D-패드 → : 커서 오른쪽
-    (96, "MOUSE_LEFT_BUTTON"),   # A : 좌클릭(선택/이동/공격)
-    (97, "MOUSE_RIGHT_BUTTON"),  # B : 우클릭(취소)
-    (99, "KEY_ENTER"),           # X : 확인/대사 진행
-    (100, "KEY_ESC"),            # Y : 취소/메뉴
-    (102, "MOUSE_LEFT_BUTTON"),  # L1 : 좌클릭 보조
-    (103, "MOUSE_RIGHT_BUTTON"), # R1 : 우클릭 보조
-    (104, "KEY_F12"),            # L2 : FT3 던전 몬스터 토글
-    (105, "KEY_SPACE"),          # R2 : 여유
-    (106, "KEY_ENTER"),          # L3
-    (107, "KEY_ESC"),            # R3
-    (108, "KEY_ENTER"),          # START : 확인
+    (19, "KEY_UP"),              # D-패드 ↑ : 이동
+    (20, "KEY_DOWN"),            # D-패드 ↓
+    (21, "KEY_LEFT"),            # D-패드 ←
+    (22, "KEY_RIGHT"),           # D-패드 →
+    (96, "KEY_Z"),               # A : 결정/공격
+    (97, "KEY_X"),               # B : 취소
+    (99, "KEY_C"),               # X : 결정/주문사용
+    (100, "KEY_SPACE"),          # Y : 메뉴
+    (102, "KEY_ENTER"),          # L1 : 확인/대사 진행 (자주 씀)
+    (103, "KEY_ESC"),            # R1 : 취소/나가기 (자주 씀)
+    (104, "KEY_A"),              # L2 : 순서교체
+    (105, "KEY_S"),              # R2 : 순서교체
+    (106, "KEY_CTRL_L"),         # L3 : 방향전환 보조
+    (107, "KEY_CTRL_R"),         # R3 : 방향전환 보조
+    (108, "KEY_ENTER"),          # START : 결정
     (109, "KEY_ESC"),            # SELECT : 취소
 ]
 
-# 왼쪽 아날로그 스틱 → 커서 이동 (스틱 있는 기기만)
-LEFT_STICK_MOUSE = [
-    (-1, "MOUSE_MOVE_LEFT"),     # AXIS X-
-    (-2, "MOUSE_MOVE_RIGHT"),    # AXIS X+
-    (-3, "MOUSE_MOVE_DOWN"),     # AXIS Y-
-    (-4, "MOUSE_MOVE_UP"),       # AXIS Y+
+# 왼쪽 아날로그 스틱 → 이동(방향키) (스틱 있는 기기만)
+#   getKeyCodeForAxis(): X축 양수→-2, 음수→-1 / Y축 양수→-3, 음수→-4
+LEFT_STICK_KEYS = [
+    (-1, "KEY_LEFT"),            # AXIS X-
+    (-2, "KEY_RIGHT"),           # AXIS X+
+    (-3, "KEY_DOWN"),            # AXIS Y-
+    (-4, "KEY_UP"),              # AXIS Y+
 ]
 
 PRESETS = {
@@ -78,7 +83,7 @@ def build(preset="retroid", profile_id=5):
     p = PRESETS[preset]
     binds = list(BUTTON_BINDINGS)
     if p["with_stick"]:
-        binds += LEFT_STICK_MOUSE
+        binds += LEFT_STICK_KEYS
     binds = [{"keyCode": kc, "binding": b} for kc, b in binds]
     controllers = [{
         "id": desc,
